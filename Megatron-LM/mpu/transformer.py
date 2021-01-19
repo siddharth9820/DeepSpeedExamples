@@ -246,11 +246,11 @@ class GPT2ParallelMLPExperts(torch.nn.Module):
         self.dense_h_to_4h = torch.nn.ModuleList([ColumnParallelLinear(hidden_size, 4*hidden_size,
                                                   gather_output=False,
                                                   init_method=init_method) for _ in range (num_experts)])
-
-        for name, param in self.dense_h_to_4h[0].named_parameters():
-            param.allreduce = False
-            #print("setting allreduce to false for param:", name)
-            # TODO: Create param groups (e.g. param.group = moe_group)
+        for i in dense_h_to_4h:
+            for name, param in self.dense_h_to_4h[i].named_parameters():
+                param.allreduce = False
+        #print("setting allreduce to false for param:", name)
+        # TODO: Create param groups (e.g. param.group = moe_group)
 
         # Project back to h.
         self.dense_4h_to_h = torch.nn.ModuleList([RowParallelLinear(
@@ -259,6 +259,9 @@ class GPT2ParallelMLPExperts(torch.nn.Module):
             input_is_parallel=True,
             init_method=output_layer_init_method) for _ in range (num_experts)])
         
+        for i in dense_4h_to_h:
+            for name, param in self.dense_4h_to_h[i].named_parameters():
+                param.allreduce = False
         
     def forward(self, hidden_states):
         #print(hidden_states.shape)
