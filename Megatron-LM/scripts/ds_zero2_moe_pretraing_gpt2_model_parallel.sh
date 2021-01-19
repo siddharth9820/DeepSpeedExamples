@@ -32,7 +32,7 @@ gpt_options=" \
        --clip-grad 1.0 \
        --warmup .01 \
        --fp16 \
-       --num-experts 8
+       --num-experts ${NUM_GPUS_PER_WORKER}
        --checkpoint-activations \
        --deepspeed-activation-checkpointing \
        --log-interval 10
@@ -43,7 +43,7 @@ gpt_options="${gpt_options}
 "
 
 
-run_cmd="deepspeed --num_nodes ${NUM_WORKERS} --num_gpus ${NUM_GPUS_PER_WORKER} pretrain_gpt2.py $@ ${gpt_options}"
+run_cmd="LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libnccl.so.2.8.3 deepspeed --num_nodes ${NUM_WORKERS} --num_gpus ${NUM_GPUS_PER_WORKER} pretrain_gpt2.py $@ ${gpt_options}"
 echo ${run_cmd}
 eval ${run_cmd}
 

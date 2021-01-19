@@ -25,7 +25,7 @@ from .initialize import get_model_parallel_world_size
 from .layers import ColumnParallelLinear
 from .layers import RowParallelLinear
 from .mappings import gather_from_model_parallel_region
-from mixture_of_experts import MoE
+from .moe import MoE
 
 import deepspeed
 
@@ -246,6 +246,12 @@ class GPT2ParallelMLPExperts(torch.nn.Module):
         self.dense_h_to_4h = torch.nn.ModuleList([ColumnParallelLinear(hidden_size, 4*hidden_size,
                                                   gather_output=False,
                                                   init_method=init_method) for _ in range (num_experts)])
+
+        for name, param in self.dense_h_to_4h[0].named_parameters():
+            param.allreduce = False
+            #print("setting allreduce to false for param:", name)
+            # TODO: Create param groups (e.g. param.group = moe_group)
+
         # Project back to h.
         self.dense_4h_to_h = torch.nn.ModuleList([RowParallelLinear(
             4*hidden_size,
@@ -392,6 +398,9 @@ class GPT2ParallelTransformerLayer(torch.nn.Module):
                 init_method,
                 output_layer_init_method=output_layer_init_method)
         else:
+            # override num_experts here after we have made the decision to use MoE
+            # TODO: sanity checks to be added
+            num_experts = num_experts // torch.distributed.get_world_size()
             self.mlp = GPT2ParallelMLPMoE(
                 hidden_size,
                 output_dropout_prob,
