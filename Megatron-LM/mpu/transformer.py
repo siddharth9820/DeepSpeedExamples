@@ -249,7 +249,8 @@ class GPT2ParallelMLPExperts(torch.nn.Module):
         self.dense_h_to_4h = torch.nn.ModuleList([ColumnParallelLinear(hidden_size, 4*hidden_size,
                                                   gather_output=False,
                                                   init_method=init_method) for _ in range (num_experts)])
-        # TODO: Create param groups (e.g. param.group = moe_group)
+        # TODO-1: Create param groups (e.g. param.group = moe_group)
+        # TODO-2: The param.allreduce = False will break the basic_moe case so add appropriate checks here.
         for i in self.dense_h_to_4h:
             for name, param in i.named_parameters():
                 param.allreduce = False
@@ -404,7 +405,8 @@ class GPT2ParallelTransformerLayer(torch.nn.Module):
                 output_layer_init_method=output_layer_init_method)
         else:
             # override num_experts here after we have made the decision to use MoE
-            # TODO: sanity checks to be added
+            # TODO-1: sanity checks to be added
+            # TODO-2: The following line will break the basic_moe case so add appropriate checks here.
             num_experts = num_experts // torch.distributed.get_world_size()
             self.mlp = GPT2ParallelMLPMoE(
                 hidden_size,
