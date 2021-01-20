@@ -25,7 +25,10 @@ from .initialize import get_model_parallel_world_size
 from .layers import ColumnParallelLinear
 from .layers import RowParallelLinear
 from .mappings import gather_from_model_parallel_region
-from .moe import MoE
+from .sharded_moe import MoE
+
+# TODO: conditional import if user asks for non-sharded moe (no alltoall support)
+# from .basic_moe import MoE
 
 import deepspeed
 
