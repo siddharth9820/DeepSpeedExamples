@@ -25,10 +25,13 @@ from .initialize import get_model_parallel_world_size
 from .layers import ColumnParallelLinear
 from .layers import RowParallelLinear
 from .mappings import gather_from_model_parallel_region
-from .sharded_moe import MoE
+
+#from .sharded_moe import MoE
+
+sharded_moe = False
 
 # TODO: conditional import if user asks for non-sharded moe (no alltoall support)
-# from .basic_moe import MoE
+from .basic_moe import MoE
 
 import deepspeed
 
@@ -249,11 +252,6 @@ class GPT2ParallelMLPExperts(torch.nn.Module):
         self.dense_h_to_4h = torch.nn.ModuleList([ColumnParallelLinear(hidden_size, 4*hidden_size,
                                                   gather_output=False,
                                                   init_method=init_method) for _ in range (num_experts)])
-        # TODO-1: Create param groups (e.g. param.group = moe_group)
-        # TODO-2: The param.allreduce = False will break the basic_moe case so add appropriate checks here.
-        for i in self.dense_h_to_4h:
-            for name, param in i.named_parameters():
-                param.allreduce = False
 
         # Project back to h.
         self.dense_4h_to_h = torch.nn.ModuleList([RowParallelLinear(
@@ -262,9 +260,15 @@ class GPT2ParallelMLPExperts(torch.nn.Module):
             input_is_parallel=True,
             init_method=output_layer_init_method) for _ in range (num_experts)])
         
-        for i in self.dense_4h_to_h:
-            for name, param in i.named_parameters():
-                param.allreduce = False
+        # TODO-1: Create param groups (e.g. param.group = moe_group)
+        if sharded_moe:
+            for i in self.dense_h_to_4h:
+                for name, param in i.named_parameters():
+                    param.allreduce = False
+        
+            for i in self.dense_4h_to_h:
+                for name, param in i.named_parameters():
+                    param.allreduce = False
         
     def forward(self, hidden_states):
         #print(hidden_states.shape)
@@ -406,8 +410,9 @@ class GPT2ParallelTransformerLayer(torch.nn.Module):
         else:
             # override num_experts here after we have made the decision to use MoE
             # TODO-1: sanity checks to be added
-            # TODO-2: The following line will break the basic_moe case so add appropriate checks here.
-            num_experts = num_experts // torch.distributed.get_world_size()
+            if sharded_moe:
+                num_experts = num_experts // torch.distributed.get_world_size()
+ 
             self.mlp = GPT2ParallelMLPMoE(
                 hidden_size,
                 output_dropout_prob,
@@ -555,8 +560,13 @@ class GPT2ParallelTransformer(torch.nn.Module):
                 moe_losses.extend(local_moe_losses)
                 l += chunk_length
         else:
+            #print(hidden_states)
+            id = 0
             for layer in self.layers:
+                id = id + 1
                 hidden_states, moe_loss = layer(hidden_states, attention_mask)
+                print(f" layer {id} norm = {torch.norm(hidden_states)}")
+                print(f" layer {id} moe_loss = {moe_loss}")
                 moe_losses.append(moe_loss)
         # Final layer norm.
         output = self.final_layernorm(hidden_states)

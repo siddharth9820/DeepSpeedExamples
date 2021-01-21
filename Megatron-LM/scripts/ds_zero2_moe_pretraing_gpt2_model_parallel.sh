@@ -4,7 +4,7 @@
 MP_SIZE=1
 
 NUM_WORKERS=1
-NUM_GPUS_PER_WORKER=16
+NUM_GPUS_PER_WORKER=2
 
 script_path=$(realpath $0)
 script_dir=$(dirname $script_path)
@@ -12,7 +12,7 @@ script_dir=$(dirname $script_path)
 config_json="$script_dir/ds_zero2_config.json"
 gpt_options=" \
        --model-parallel-size ${MP_SIZE} \
-       --num-layers 12 \
+       --num-layers 4 \
        --hidden-size 512 \
        --num-attention-heads 16 \
        --batch-size 8 \
@@ -32,11 +32,15 @@ gpt_options=" \
        --clip-grad 1.0 \
        --warmup .01 \
        --fp16 \
-       --num-experts ${NUM_GPUS_PER_WORKER}
-       --checkpoint-activations \
-       --deepspeed-activation-checkpointing \
+       --num-experts 16
        --log-interval 10
 "
+
+# Disable activation checkpointing
+
+#     --checkpoint-activations \
+#       --deepspeed-activation-checkpointing \
+
 gpt_options="${gpt_options}
                --deepspeed \
                --deepspeed_config ${config_json} \
