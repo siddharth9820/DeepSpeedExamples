@@ -26,12 +26,12 @@ from .layers import ColumnParallelLinear
 from .layers import RowParallelLinear
 from .mappings import gather_from_model_parallel_region
 
-#from .sharded_moe import MoE
-
 sharded_moe = False
 
-# TODO: conditional import if user asks for non-sharded moe (no alltoall support)
-from .basic_moe import MoE
+if sharded_moe:
+    from .sharded_moe import MoE
+else:
+    from .basic_moe import MoE
 
 import deepspeed
 
