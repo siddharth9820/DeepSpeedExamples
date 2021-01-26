@@ -26,15 +26,6 @@ from .layers import ColumnParallelLinear
 from .layers import RowParallelLinear
 from .mappings import gather_from_model_parallel_region
 
-sharded_moe = False
-
-if sharded_moe:
-    from .sharded_moe import MoE
-else:
-    from .basic_moe import MoE
-
-import deepspeed
-
 from .random import checkpoint
 from .random import get_cuda_rng_tracker
 
@@ -172,6 +163,8 @@ def gelu_impl(x):
 def gelu(x):
     return gelu_impl(x)
 
+# UNUSED in the new implementation
+# TODO: Remove and cleanup this code.
 class GPT2ParallelMLPMoE(torch.nn.Module):
     """MLP for GPT2.
 
@@ -202,6 +195,7 @@ class GPT2ParallelMLPMoE(torch.nn.Module):
                                             output_layer_init_method=output_layer_init_method,
                                             num_experts = num_experts) 
         
+
         self.MoE = MoE(
                     hidden_size,
                     num_experts=num_experts,
@@ -222,6 +216,8 @@ class GPT2ParallelMLPMoE(torch.nn.Module):
         output = self.dropout(output)
         return output, loss
 
+# UNUSED in the new implementation
+# TODO: Remove and cleanup this code.
 class GPT2ParallelMLPExperts(torch.nn.Module):
     """MLP for GPT2.
 
@@ -408,17 +404,10 @@ class GPT2ParallelTransformerLayer(torch.nn.Module):
                 init_method,
                 output_layer_init_method=output_layer_init_method)
         else:
-            # override num_experts here after we have made the decision to use MoE
-            # TODO-1: sanity checks to be added
-            if sharded_moe:
-                num_experts = num_experts // torch.distributed.get_world_size()
- 
-            self.mlp = GPT2ParallelMLPMoE(
-                hidden_size,
-                output_dropout_prob,
-                init_method,
-                output_layer_init_method=output_layer_init_method,
-                num_experts=num_experts)
+            from deepspeed.moe.layer import MoE
+            # Use the DeepSpeed API to use MoE layer and experts.
+            # -- sharding, comm. and parameter handling will be done inside DeepSpeed 
+            self.mlp = MoE(hidden_size, output_dropout_prob, GPT2ParallelMLP(hidden_size, output_dropout_prob, init_method, output_layer_init_method=output_layer_init_method), num_experts=num_experts)
 
     # forward
     def forward(self, hidden_states, ltor_mask):
