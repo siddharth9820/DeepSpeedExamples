@@ -26,6 +26,8 @@ from .layers import ColumnParallelLinear
 from .layers import RowParallelLinear
 from .mappings import gather_from_model_parallel_region
 
+import deepspeed
+
 from .random import checkpoint
 from .random import get_cuda_rng_tracker
 
@@ -549,13 +551,10 @@ class GPT2ParallelTransformer(torch.nn.Module):
                 moe_losses.extend(local_moe_losses)
                 l += chunk_length
         else:
-            #print(hidden_states)
-            id = 0
             for layer in self.layers:
-                id = id + 1
                 hidden_states, moe_loss = layer(hidden_states, attention_mask)
-                print(f" layer {id} norm = {torch.norm(hidden_states)}")
-                print(f" layer {id} moe_loss = {moe_loss}")
+                #print(f" layer {id} norm = {torch.norm(hidden_states)}")
+                #print(f" layer {id} moe_loss = {moe_loss}")
                 moe_losses.append(moe_loss)
         # Final layer norm.
         output = self.final_layernorm(hidden_states)
