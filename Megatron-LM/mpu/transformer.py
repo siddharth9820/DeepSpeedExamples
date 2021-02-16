@@ -333,11 +333,7 @@ class GPT2ParallelMLP(torch.nn.Module):
         output = self.dense_4h_to_h(intermediate_parallel)
         output = self.dropout(output)
         
-        #the second output is a fake loss value meant to provide
-        #consistency when using MoE
-        second_output= torch.tensor(0.0, device=output.device)
-        second_output.requires_grad = False
-        return output, second_output
+        return output
 
 
 class GPT2ParallelTransformerLayer(torch.nn.Module):
@@ -397,9 +393,11 @@ class GPT2ParallelTransformerLayer(torch.nn.Module):
         # Layernorm on the input data.
         self.post_attention_layernorm = LayerNorm(hidden_size,
                                                   eps=layernorm_epsilon)
-
+        
+        self.num_experts = num_experts
+        
         # MLP
-        if num_experts == 1:
+        if self.num_experts == 1:
             self.mlp = GPT2ParallelMLP(
                 hidden_size,
                 output_dropout_prob,
@@ -409,7 +407,7 @@ class GPT2ParallelTransformerLayer(torch.nn.Module):
             from deepspeed.moe.layer import MoE
             # Use the DeepSpeed API to use MoE layer and experts.
             # -- sharding, comm. and parameter handling will be done inside DeepSpeed 
-            self.mlp = MoE(hidden_size, output_dropout_prob, GPT2ParallelMLP(hidden_size, output_dropout_prob, init_method, output_layer_init_method=output_layer_init_method), num_experts=num_experts)
+            self.mlp = MoE(hidden_size, output_dropout_prob, GPT2ParallelMLP(hidden_size, output_dropout_prob, init_method, output_layer_init_method=output_layer_init_method), num_experts=self.num_experts)
 
     # forward
     def forward(self, hidden_states, ltor_mask):
@@ -425,7 +423,11 @@ class GPT2ParallelTransformerLayer(torch.nn.Module):
         # Layer norm post the self attention.
         layernorm_output = self.post_attention_layernorm(layernorm_input)
         # MLP.
-        mlp_output, moe_loss = self.mlp(layernorm_output)
+        moe_loss = None
+        if self.num_experts == 1:
+            mlp_output = self.mlp(layernorm_output)
+        else:
+            mlp_output, moe_loss = self.mlp(layernorm_output)
         # Second residual connection.
         output = layernorm_input + mlp_output
         return output, moe_loss
