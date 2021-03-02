@@ -228,6 +228,8 @@ def add_data_args(parser):
 
     group = parser.add_argument_group('data', 'data configurations')
 
+    group.add_argument('--expert-parallel-size', type=int, default=1,
+                       help='size of the expert parallel.')
     group.add_argument('--model-parallel-size', type=int, default=1,
                        help='size of the model parallel.')
     group.add_argument('--shuffle', action='store_true',

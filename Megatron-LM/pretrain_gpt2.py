@@ -26,6 +26,7 @@ import numpy as np
 import torch
 
 import deepspeed
+import deepspeed.utils.groups as groups
 
 from arguments import get_args
 from configure_data import configure_data
@@ -380,6 +381,7 @@ def see_memory_usage(message, force=False):
         print("Max Memory Allocated ", torch.cuda.max_memory_allocated()/(1024*1024*1024), "GigaBytes")
         print("Cache Allocated ", torch.cuda.memory_cached()/(1024*1024*1024), "GigaBytes")
         print("Max cache Allocated ", torch.cuda.max_memory_cached()/(1024*1024*1024), "GigaBytes")
+
         print(" ")
         #input("Press Any Key To Continue ..")
 
@@ -589,6 +591,8 @@ def initialize_distributed(args):
 
     # Set the model-parallel / data-parallel communicators.
     mpu.initialize_model_parallel(args.model_parallel_size)
+
+    groups.initialize(args.model_parallel_size, args.expert_parallel_size, mpu)
 
     # Optional DeepSpeed Activation Checkpointing Features
     #
