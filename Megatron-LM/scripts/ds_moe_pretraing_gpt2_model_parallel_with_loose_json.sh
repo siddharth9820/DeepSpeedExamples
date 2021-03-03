@@ -2,9 +2,9 @@
 
 # Change for multinode config
 MP_SIZE=2
-EP_SIZE=4
+EP_SIZE=2
 
-NUM_WORKERS=2
+NUM_WORKERS=1
 NUM_GPUS_PER_WORKER=8
 
 script_path=$(realpath $0)
@@ -22,7 +22,7 @@ gpt_options=" \
        --max-position-embeddings 1024 \
        --train-iters 1000 \
        --resume-dataloader \
-       --train-data /data/megatron/webtext/data.json \
+       --train-data synthetic_data.json \
        --lazy-loader \
        --tokenizer-type GPT2BPETokenizer \
        --split 949,50,1 \
