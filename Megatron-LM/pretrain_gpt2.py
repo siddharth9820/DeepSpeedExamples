@@ -592,7 +592,7 @@ def initialize_distributed(args):
     # Set the model-parallel / data-parallel communicators.
     mpu.initialize_model_parallel(args.model_parallel_size)
 
-    groups.initialize(args.model_parallel_size, args.expert_parallel_size, mpu)
+    groups.initialize(args.expert_parallel_size, mpu)
 
     # Optional DeepSpeed Activation Checkpointing Features
     #
