@@ -42,6 +42,7 @@ else:
     from model import DistributedDataParallel as DDP
 import mpu
 from apex.optimizers import FusedAdam as Adam
+#from mpu.optim import RAdam as Adam
 from utils import Timers
 from utils import save_checkpoint
 from utils import load_checkpoint

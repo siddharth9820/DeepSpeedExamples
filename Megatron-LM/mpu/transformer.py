@@ -301,7 +301,7 @@ class GPT2ParallelTransformerLayer(torch.nn.Module):
         # Layer norm post the self attention.
         layernorm_output = self.post_attention_layernorm(layernorm_input)
         # MLP.
-        moe_loss = None
+        moe_loss = torch.tensor(0.0, device=layernorm_output.device, dtype=layernorm_output.dtype)
         if self.num_experts == 1:
             mlp_output = self.mlp(layernorm_output)
         else:
