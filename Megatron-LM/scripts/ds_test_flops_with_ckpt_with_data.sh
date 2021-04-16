@@ -1,10 +1,10 @@
 #! /bin/bash
 
 # Change for multinode config
-MP_SIZE=2
+MP_SIZE=1
 NUM_WORKERS=1
 NUM_GPUS_PER_WORKER=8
-EP_SIZE=4
+EP_SIZE=8
 
 script_path=$(realpath $0)
 script_dir=$(dirname $script_path)
@@ -14,14 +14,14 @@ gpt_options=" \
        --model-parallel-size ${MP_SIZE} \
        --expert-parallel-size ${EP_SIZE} \
        --num-layers 12 \
-       --hidden-size 4096 \
+       --hidden-size 2048 \
        --num-attention-heads 16 \
        --seq-length 1024 \
        --max-position-embeddings 1024 \
        --train-iters 1000 \
-       --batch-size 2 \
+       --batch-size 16 \
        --resume-dataloader \
-       --train-data synthetic_data.json \
+       --train-data /home/amawa/megatron-data/webtext/data.json \
        --lazy-loader \
        --tokenizer-type GPT2BPETokenizer \
        --split 949,50,1 \
@@ -33,7 +33,7 @@ gpt_options=" \
        --clip-grad 1.0 \
        --warmup .01 \
        --fp16 \
-       --num-experts 4 \
+       --num-experts 8 \
        --log-interval 10
        --text-key text \
        --loose-json --eval-interval 0 \
