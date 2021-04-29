@@ -305,7 +305,7 @@ class GPT2ParallelTransformerLayer(torch.nn.Module):
         if self.num_experts == 1:
             mlp_output = self.mlp(layernorm_output)
         else:
-            mlp_output, moe_loss = self.mlp(layernorm_output)
+            mlp_output, moe_loss, _ = self.mlp(layernorm_output)
         # Second residual connection.
         output = layernorm_input + mlp_output
         return output, moe_loss
