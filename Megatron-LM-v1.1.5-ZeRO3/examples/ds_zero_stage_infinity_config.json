@@ -14,7 +14,7 @@
     "sub_group_size": 1e8,
     "offload_optimizer": {
       "device": "nvme",
-      "nvme_path": "/nvme_data",
+      "nvme_path": "/mnt/test-1",
       "buffer_count": 4,
       "pipeline_read": false,
       "pipeline_write": false,
@@ -22,7 +22,7 @@
     },
     "offload_param": {
       "device": "nvme",
-      "nvme_path": "/nvme_data",
+      "nvme_path": "/mnt/test-1",
       "max_in_cpu": 1,
       "pin_memory": true
     }
